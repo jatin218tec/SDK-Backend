@@ -11,9 +11,9 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-import pymongo
 import os
 from dotenv import load_dotenv
+import djongo
 
 load_dotenv()
 
@@ -31,7 +31,6 @@ SECRET_KEY = "django-insecure-a%g5c!bk0*3iq*+n&jc=u)!(cckoxl9!i2r^egp$k#do_n&4ge
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -73,28 +72,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "sdk_main.wsgi.application"
-
-
 MONGO_URI = os.getenv('MONGO_URI')
 
-client = pymongo.MongoClient(MONGO_URI)
-db = client.test
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'djangorestframework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        "NAME": BASE_DIR / "db.sqlite3",
+        'NAME': 'test',
+        'HOST': MONGO_URI,
     }
 }
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
 
 
 # Password validation
