@@ -35,6 +35,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "rest_framework",
+    "rest_framework_jwt",
+    "authentication.apps.AuthenticationConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -73,13 +76,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "sdk_main.wsgi.application"
 MONGO_URI = os.getenv('MONGO_URI')
+PASSWORD = os.getenv('PASSWORD')
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'djangorestframework_simplejwt.authentication.JWTAuthentication',
+        'authentication.utils.KeyAuthentication',
     ],
 }
 
@@ -87,10 +91,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'test',
-        'HOST': MONGO_URI,
+        'CLIENT':{
+            'host': MONGO_URI,
+            'username': 'jatin21ai',
+            'password': PASSWORD,
+        },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -109,8 +116,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
@@ -133,3 +138,6 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = 'authentication.CustomUser'
+AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend',]
