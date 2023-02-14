@@ -13,8 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-import djongo
-
+ 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -35,15 +34,19 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "rest_framework",
-    "rest_framework_jwt",
-    "authentication.apps.AuthenticationConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
+    "rest_framework",
+    "rest_framework_jwt",
+    "authentication",
+    "store_database",
+    "store_storage"
+
 ]
 
 MIDDLEWARE = [
@@ -75,26 +78,19 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "sdk_main.wsgi.application"
+
 MONGO_URI = os.getenv('MONGO_URI')
 PASSWORD = os.getenv('PASSWORD')
-
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'authentication.utils.KeyAuthentication',
-    ],
-}
+USERNAME = os.getenv('USERNAME')
 
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'test',
-        'CLIENT':{
-            'host': MONGO_URI,
-            'username': 'jatin21ai',
-            'password': PASSWORD,
+        'NAME': 'django',
+        'CLIENT': {
+            'host': "mongodb+srv://jatin21ai:wZMjBcTb2No6TpRO@cluster1.bxuv5nq.mongodb.net/?retryWrites=true&w=majority",
+            'username': "jatin21ai",
+            'password': "wZMjBcTb2No6TpRO",
         },
     }
 }
@@ -139,5 +135,5 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AUTH_USER_MODEL = 'authentication.CustomUser'
+AUTH_USER_MODEL = 'authentication.UserProfile'
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend',]
