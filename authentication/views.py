@@ -1,39 +1,33 @@
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import UserSerializer, ProjectSerializer
-from .utils import APIAuthentication
+from .utils import APIKeyAuthentication, ProjectPermission
 from .models import Projects, UserProfile
 
+
 # auth views
-class SignInView(generics.CreateAPIView):
+class SignUpView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         user = serializer.save()
         user.save()
+
 # project views
 class ProjectRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     
-    authentication_classes = [APIAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    queryset = UserProfile.objects.all()
-    serializer_class = UserSerializer
-    
-class ProjectRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    
-    authentication_classes = [APIAuthentication]
-    permission_classes = [IsAuthenticated]
+    authentication_classes = [APIKeyAuthentication]
+    permission_classes = [ProjectPermission]
 
     queryset = Projects.objects.all()
     serializer_class = ProjectSerializer
 
 class ProjectCreateView(generics.ListCreateAPIView):
-    
-    permission_classes = [AllowAny]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     queryset = Projects.objects.all()
     serializer_class = ProjectSerializer

@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import CollectionCreateAPI, AddDocumentAPIView
+from .views import AddDocumentAPIView, AddSubCollectionAPIView
 
 urlpatterns = [
-    path('create-collection/', CollectionCreateAPI.as_view(), name='create-collection'),
-    path('add-document/', AddDocumentAPIView.as_view(), name='add-document')
+    path('add-document/', AddDocumentAPIView.as_view(), name='add-document'),
+    path('update-document/', AddDocumentAPIView.as_view(), name='add-document'),
+    path('create-sub-collection/', AddSubCollectionAPIView.as_view(), name='create-collection'),
 ]
