@@ -20,9 +20,12 @@ def addSubcollection(request, client):
     collection_name = data.get('collection_name', None)
     document_id = data.get('document_id', None)
     sub_collection_name = data.get('sub_collection_name', None)
-    subdocuments_data = request.data.get('document_data')
+    subdocuments_data = data.get('document_data')
+    project_id = data.get('project_id', None)
 
     # checking 404
+    if not project_id:
+        return Response({"error": "No project found"}, status=400)
     if not collection_name:
         return Response({"error": "No collection name specified."}, status=400)
     if not sub_collection_name:
@@ -64,11 +67,12 @@ def addSubcollection(request, client):
 
 def addDocument(request, client):
     """
-    Add a document to the database.
+    Add a document to the specified collection or Create a new collection.
     @param request - the request object           
-    @param client - the client object           
+    @param client - the mongo client           
     @returns a response object           
     """
+
     data = request.data
 
     collection_name = data.get('collection_name', None)
@@ -76,6 +80,8 @@ def addDocument(request, client):
     project_id = data.get('project_id', None)
 
     # checking 404
+    if not project_id:
+        return Response({"error": "No project found"}, status=400)
     if not collection_name:
         return Response({"error": "No collection name specified."}, status=400)
     if not document_data:
@@ -93,36 +99,36 @@ def addDocument(request, client):
         if "_id" not in document_data:
             document_data["_id"] = str(uuid.uuid4())
 
-        channel_layer = get_channel_layer()
-
-        collection_data = collection.find({}).limit(10)
-
-        async_to_sync(channel_layer.group_send)(
-            f'{project_id}_{collection_name}',
-            {
-                "type": "websocket.collection",
-                "collection": collection_data
-            })
-
         document = collection.insert_one(document_data)
 
-        collection_data = collection.find({}).limit(10)
+        documents = []
+        for doc in collection.find({}).limit(10):
+            # Convert BSON document to Python dictionary
+            doc_dict = dict(doc)
+            # Add the dictionary to the list of documents
+            documents.append(doc_dict)
 
+        channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'{project_id}_{collection_name}',
             {
                 "type": "websocket.collection",
-                "collection": collection_data
+                "collection": json.dumps(documents)
             })
 
         return Response({"success": True, "message": f"Inserted document with id: {document.inserted_id}"})
 
-        # return Response({"success": True, "message": f"Inserted document with id: {document.inserted_id}"})
-
     except OperationFailure as e:
         return Response({"success": False, "message": e}, status=500)
 
+
 def updateDocument(request, client):
+    """
+    Update a document in the database.
+    @param request - the request object           
+    @param client - the database client           
+    @returns a response object           
+    """
     data = request.data
 
     collection_name = data.get('collection_name', None)
@@ -130,40 +136,93 @@ def updateDocument(request, client):
     project_id = data.get('project_id', None)
 
     # checking 404
+    if not project_id:
+        return Response({"error": "No project found"}, status=400)
     if not collection_name:
         return Response({"error": "No collection name specified."}, status=400)
     if not document_data:
         return Response({"error": "No data to update."}, status=400)
 
     document_data = json.loads(document_data)
-    if not document_data:
+    if "_id" not in document_data.keys():
         return Response({"error": "No document specified."}, status=400)
-    
+
     document_id = document_data["_id"]
 
-    doc_data_dict = {k: v for k, v in document_data.items() if k != '_id'}
-
     try:
-        # Use the collection name in the URL to select the correct model
         db = client.get_database("store")
-
         collection = db.get_collection(collection_name)
-        collection.update_one({
+        document_get = collection.find({"_id": document_id})
+
+        if not document_get:
+            return Response({"error": "Document not found."}, status=404)
+
+        doc_data_dict = {k: v for k, v in document_data.items() if k != '_id'}
+
+        collection.update_one(
             {"_id": document_id},
-            {"$set": doc_data_dict}    
-        })
+            {"$set": doc_data_dict}
+        )
 
         channel_layer = get_channel_layer()
         document_data = collection.find({"_id": document_id})
+        document_data = document_data[0]
+        document_data = dict(document_data)
 
         async_to_sync(channel_layer.group_send)(
-            f'{project_id}_{collection_name}_{document_data["_id"]}',
+            f'{project_id}_{collection_name}_{document_id}',
             {
-                "type": "documents.update",
-                "document": document_data
+                "type": "websocket.document",
+                "document": json.dumps(document_data)
             })
 
-        return Response({"success": True, "message": f"Inserted document with id: {document_id}"})
+        return Response({"success": True, "message": f"Updated document with id: {document_id}"})
+
+    except OperationFailure as e:
+        return Response({"success": False, "message": e}, status=500)
+
+
+def deleteDocument(request, client, kwargs):
+    """
+    Delete a document from a collection.
+    @param request - the request object           
+    @param client - the client object           
+    @param kwargs - the keyword arguments           
+    @returns the response object           
+    """
+    if not 'document' in kwargs:
+        return Response({"success": False, "message": "No document specified"}, status=404)
+    if not 'collection' in kwargs:
+        return Response({"success": False, "message": "No collection name specified"}, status=404)
+
+    document_id = kwargs['document']
+    collection_name = kwargs['collection']
+
+    try:
+        db = client.get_database("store")
+        collection = db.get_collection(collection_name)
+        response = collection.delete_one({"_id": document_id})
+        
+        print(response)
+
+        data = request.data
+        project_id = data.get('project_id', None)
+        
+
+        documents = []
+        for doc in collection.find({}).limit(10):
+            # Convert BSON document to Python dictionary
+            doc_dict = dict(doc)
+            # Add the dictionary to the list of documents
+            documents.append(doc_dict)
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'{project_id}_{collection_name}',
+            {
+                "type": "websocket.collection",
+                "collection": json.dumps(documents)
+            })
 
     except OperationFailure as e:
         return Response({"success": False, "message": e}, status=500)

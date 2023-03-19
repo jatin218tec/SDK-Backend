@@ -16,7 +16,6 @@ class CollectionSubscribeSyncConsumerApi(AsyncConsumer):
     This is the consumer for the websocket. It subscribes to a collection, it does'nt listens for messages.
     @param event - the event that is recieved from the websocket.
     """
-
     async def websocket_connect(self, event):
         print("websocket Connected...")
 
@@ -45,7 +44,7 @@ class CollectionSubscribeSyncConsumerApi(AsyncConsumer):
         })
 
         await self.channel_layer.group_send(
-            f'{self.project_id}_{self.collection_name}',
+            self.group_name,
             {
                 'type': 'websocket.collection',
                 'collection': json.dumps(documents)
@@ -66,7 +65,10 @@ class CollectionSubscribeSyncConsumerApi(AsyncConsumer):
 
 
 class DocumentSubscribeSyncConsumerApi(AsyncConsumer):
-
+    """
+    When the websocket is connected, send the document to the group.
+    @param event - the websocket event
+    """
     async def websocket_connect(self, event):
         print("websocket Connected...", event)
 
@@ -83,6 +85,42 @@ class DocumentSubscribeSyncConsumerApi(AsyncConsumer):
 
         await self.send({
             'type': 'websocket.accept'
+        })
+
+        try:
+            db = client.get_database("store")
+            collection = db.get_collection(self.collection_name)
+
+            document = collection.find({"_id": self.document_id})
+
+            if document:
+                document = document[0]
+            # Convert BSON document to Python dictionary
+            doc_dict = dict(document)
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'websocket.document',
+                    'document': json.dumps(doc_dict)
+                })
+        except:
+            await self.send({
+                'type': 'websocket.send',
+                'text': "something went wrong :( "
+            })
+
+    def websocket_disconnect(self, event):
+        print("websocket Disconnected...", event)
+        disconnect()
+        raise StopConsumer()
+
+    async def websocket_document(self, event):
+        document = event['document']
+        print('here event call')
+        await self.send({
+            'type': 'websocket.send',
+            'text': document
         })
 
 

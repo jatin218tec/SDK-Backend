@@ -5,7 +5,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import UserSerializer, ProjectSerializer
 from .utils import APIKeyAuthentication, ProjectPermission
 from .models import Projects, UserProfile
-
+from rest_framework.views import APIView
+from . import helper
 
 # auth views
 class SignUpView(generics.CreateAPIView):
@@ -15,6 +16,11 @@ class SignUpView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         user.save()
+
+class GetUserAuthView(APIView):
+    def post(self, request):
+        print(helper.signInAccount(request))
+        return helper.signInAccount(request)
 
 # project views
 class ProjectRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
