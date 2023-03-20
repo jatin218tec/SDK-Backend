@@ -226,3 +226,36 @@ def deleteDocument(request, client, kwargs):
 
     except OperationFailure as e:
         return Response({"success": False, "message": e}, status=500)
+    
+def getDocument(request, client, kwargs):
+    """
+    Get a document from a collection.
+    @param request - the request object           
+    @param client - the client object           
+    @param kwargs - the keyword arguments           
+    @returns the response object           
+    """
+
+    data = request.data
+
+    if not 'collection' in data:
+        return Response({"success": False, "message": "No collection name specified"}, status=404)
+
+    collection_name = data['collection']
+    lookup_field = kwargs['lookup_field']
+    lookup_value = kwargs['lookup_value']
+
+    try:
+        db = client.get_database("store")
+        collection = db.get_collection(collection_name)
+        document = collection.find({lookup_field: lookup_value})
+
+        if not document:
+            return Response({}, status=200)
+        
+        document = list(document)
+
+        return Response({"success": True, "message": "Document found", "document": document})
+
+    except OperationFailure as e:
+        return Response({"success": False, "message": e}, status=500)

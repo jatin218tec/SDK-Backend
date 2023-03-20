@@ -27,6 +27,10 @@ class DocumentAPIView(APIView):
     authentication_classes = [APIKeyAuthentication]
     permission_classes = [ProjectPermission]
 
+    def get(self, request, *args, **kwargs):
+        response = helper.getDocument(request, client, kwargs)
+        return response
+
     def post(self, request, *args, **kwargs):
         response = helper.addDocument(request, client)
         return response
