@@ -1,4 +1,4 @@
-iversion: '3.8'
+version: '3'
 
 services:
   django:
@@ -12,8 +12,8 @@ services:
     environment:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1
-      - CELERY_BROKER=redis://redis:6379/0
-      - CELERY_BACKEND=redis://redis:6379/0
+      - CELERY_BROKER=redis://redis:6379
+      - CELERY_BACKEND=redis://redis:6379
       - DB_HOST=mongodb+srv://jatin21ai:wZMjBcTb2No6TpRO@cluster1.bxuv5nq.mongodb.net/?retryWrites=true&w=majority
       - DB_NAME=django
       - DB_USER=jatin21ai
